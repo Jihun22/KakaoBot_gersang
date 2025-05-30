@@ -26,17 +26,35 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName,
             replier.reply("⚠️ " + sender + "님은 이미 '" + msg + "'에 참가 중입니다.");
             return;
         }
-        team.members.push(sender);
         if (team.members.length >= 5) {
-            replier.reply("🎉 '" + msg + "' 모집 완료!\n🧑‍✈️ 파장: " + team.leader + "\n👥 팀원: " + team.members.join(", "));
-            delete nataTeams[msg];
-        } else {
-            replier.reply("🙋 " + sender + "님이 '" + msg + "'에 참가했습니다.\n📊 현재 인원: " + team.members.length + "/5");
+            replier.reply("⚠️ '" + msg + "' 팀은 이미 5명이 가득 찼습니다.");
+            return;
+        }
+        team.members.push(sender);
+        replier.reply("🙋 " + sender + "님이 '" + msg + "'에 참가했습니다.\n📊 현재 인원: " + team.members.length + "/5");
+        return;
+    }
+
+    // ✅ 팀원 취소
+    if (msg === "/취소") {
+        var found = false;
+        for (var teamName in nataTeams) {
+            var team = nataTeams[teamName];
+            var index = team.members.indexOf(sender);
+            if (index !== -1) {
+                team.members.splice(index, 1);
+                found = true;
+                replier.reply("❌ " + sender + "님이 '" + teamName + "' 팀에서 취소되었습니다.\n📊 현재 인원: " + team.members.length + "/5");
+                return;
+            }
+        }
+        if (!found) {
+            replier.reply("⚠️ 현재 참가 중인 팀이 없습니다.");
         }
         return;
     }
 
-    // ✅ 팀 취소
+    // ✅ 팀 취소 (파장만)
     if (msg.startsWith("/팀취소")) {
         var teamName = msg.replace("/팀취소", "").trim();
         if (!teamName) {
@@ -52,8 +70,29 @@ function response(room, msg, sender, isGroupChat, replier, imageDB, packageName,
             replier.reply("⛔ 파장만 팀을 취소할 수 있습니다.");
             return;
         }
+        team.members = [team.leader]; // 파장만 남기고 초기화
+        replier.reply("🗑️ '" + teamName + "' 팀원이 모두 취소되었습니다.\n파장은 유지됩니다.");
+        return;
+    }
+
+    // ✅ 팀 삭제 (파장만)
+    if (msg.startsWith("/팀삭제")) {
+        var teamName = msg.replace("/팀삭제", "").trim();
+        if (!teamName) {
+            replier.reply("⚠️ 팀 이름을 입력해 주세요. 예: /팀삭제 1팀");
+            return;
+        }
+        var team = nataTeams[teamName];
+        if (!team) {
+            replier.reply("❌ '" + teamName + "' 팀은 존재하지 않습니다.");
+            return;
+        }
+        if (team.leader !== sender) {
+            replier.reply("⛔ 파장만 팀을 삭제할 수 있습니다.");
+            return;
+        }
         delete nataTeams[teamName];
-        replier.reply("🗑️ '" + teamName + "' 팀이 취소되었습니다.");
+        replier.reply("🗑️ '" + teamName + "' 팀이 완전히 삭제되었습니다.");
         return;
     }
 
